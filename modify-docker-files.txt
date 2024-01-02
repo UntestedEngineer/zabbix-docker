@@ -1,0 +1,9 @@
+"server-pgsql"
+ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
+ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
+
+"Additional Packages:
+    unixodbc \
+    openssh-client \
+    jq \
+    expect" && \

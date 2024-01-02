@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=6.4
 ARG ZBX_VERSION=${MAJOR_VERSION}.10
-ARG BUILD_BASE_IMAGE=zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
+ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} as builder
 
@@ -60,7 +60,10 @@ RUN set -eux && \
             libxml2 \
             postgresql-client \
             snmp-mibs-downloader \
-            unixodbc" && \
+            unixodbc \
+            openssh-client \
+            jq \
+            expect" && \
     apt-get -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y \
             --no-install-recommends install \
