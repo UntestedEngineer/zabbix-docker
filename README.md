@@ -1,4 +1,4 @@
-## Modified Zabbix Docker
+# Modified Zabbix Docker
 
 This repository is a fork of the original located here: [Zabbix Docker](https://github.com/zabbix/zabbix-docker)
 
