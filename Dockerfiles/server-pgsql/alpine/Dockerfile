@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=6.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.11
+ARG ZBX_VERSION=${MAJOR_VERSION}.12
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
-FROM ${BUILD_BASE_IMAGE} as builder
+FROM ${BUILD_BASE_IMAGE} AS builder
 
-FROM alpine:3.17
+FROM alpine:3.19
 
 ARG MAJOR_VERSION
 ARG ZBX_VERSION
@@ -56,6 +56,7 @@ RUN set -eux && \
             pcre2 \
             postgresql-client \
             postgresql-libs \
+            gzip \
             unixodbc \
             openssh-client \
             jq \
@@ -99,8 +100,7 @@ RUN set -eux && \
     mkdir -p /usr/share/doc/zabbix-server-postgresql && \
     chown --quiet -R zabbix:root /etc/zabbix/ /var/lib/zabbix/ && \
     chgrp -R 0 /etc/zabbix/ /var/lib/zabbix/ && \
-    chmod -R g=u /etc/zabbix/ /var/lib/zabbix/ && \
-    rm -rf /var/cache/apk/*
+    chmod -R g=u /etc/zabbix/ /var/lib/zabbix/
 
 EXPOSE 10051/TCP
 

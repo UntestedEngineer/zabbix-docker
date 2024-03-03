@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=6.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.11
+ARG ZBX_VERSION=${MAJOR_VERSION}.12
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
-FROM ${BUILD_BASE_IMAGE} as builder
+FROM ${BUILD_BASE_IMAGE} AS builder
 
 FROM ubuntu:jammy
 
@@ -37,7 +37,8 @@ COPY --from=builder ["/tmp/zabbix-${ZBX_VERSION}/database/postgresql/timescaledb
 COPY --from=builder ["/tmp/zabbix-${ZBX_VERSION}/database/postgresql/timescaledb/option-patches/with-compression/*.sql", "/usr/share/doc/zabbix-server-postgresql/option-patches/with-compression/"]
 COPY --from=builder ["/tmp/zabbix-${ZBX_VERSION}/database/postgresql/timescaledb/option-patches/without-compression/*.sql", "/usr/share/doc/zabbix-server-postgresql/option-patches/without-compression/"]
 
-RUN set -eux && \
+RUN --mount=type=cache,target=/var/lib/apt/,sharing=locked \
+    set -eux && \
     echo "#!/bin/sh\nexit 101" > /usr/sbin/policy-rc.d && \
     INSTALL_PKGS="bash \
             tini \
@@ -60,6 +61,7 @@ RUN set -eux && \
             libxml2 \
             postgresql-client \
             snmp-mibs-downloader \
+            gzip \
             unixodbc \
             openssh-client \
             jq \
@@ -104,8 +106,7 @@ RUN set -eux && \
     chgrp -R 0 /etc/zabbix/ /var/lib/zabbix/ && \
     chmod -R g=u /etc/zabbix/ /var/lib/zabbix/ && \
     apt-get -y autoremove && \
-    apt-get -y clean && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get -y clean
 
 EXPOSE 10051/TCP
 
