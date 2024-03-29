@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=6.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.12
+ARG ZBX_VERSION=${MAJOR_VERSION}.13
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=/var/lib/apt/,sharing=locked \
             snmp-mibs-downloader \
             gzip \
             unixodbc \
-            openssh-client \
+            zlib1g \
             jq \
             expect" && \
     apt-get -y update && \
