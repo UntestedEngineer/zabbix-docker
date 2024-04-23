@@ -64,6 +64,7 @@ RUN --mount=type=cache,target=/var/lib/apt/,sharing=locked \
             gzip \
             unixodbc \
             zlib1g \
+            openssh-client \
             jq \
             expect" && \
     apt-get -y update && \
