@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
-ARG MAJOR_VERSION=6.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.18
+ARG MAJOR_VERSION=7.0
+ARG ZBX_VERSION=${MAJOR_VERSION}.3
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -19,7 +19,7 @@ ENV TERM=xterm \
 LABEL org.opencontainers.image.authors="Alexey Pustovalov <alexey.pustovalov@zabbix.com>" \
       org.opencontainers.image.description="Zabbix server with PostgreSQL database support" \
       org.opencontainers.image.documentation="https://www.zabbix.com/documentation/${MAJOR_VERSION}/manual/installation/containers" \
-      org.opencontainers.image.licenses="GPL v2.0" \
+      org.opencontainers.image.licenses="AGPL v3.0" \
       org.opencontainers.image.source="${ZBX_SOURCES}" \
       org.opencontainers.image.title="Zabbix server (PostgreSQL)" \
       org.opencontainers.image.url="https://zabbix.com/" \
@@ -35,7 +35,6 @@ COPY --from=builder ["/tmp/zabbix-${ZBX_VERSION}-output/server/database/postgres
 
 RUN set -eux && \
     INSTALL_PKGS="bash \
-            tini \
             traceroute \
             nmap \
             fping \
@@ -105,7 +104,7 @@ VOLUME ["/var/lib/zabbix/snmptraps", "/var/lib/zabbix/export"]
 
 COPY ["docker-entrypoint.sh", "/usr/bin/"]
 
-ENTRYPOINT ["/sbin/tini", "--", "/usr/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
 
 USER 1997
 

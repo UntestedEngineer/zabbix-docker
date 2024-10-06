@@ -16,15 +16,17 @@ The server performs the polling and trapping of data, it calculates triggers, se
 
 # Zabbix server images
 
-These are the only official Zabbix server Docker images. They are based on Alpine Linux v3.19, Ubuntu 22.04 (jammy), CentOS Stream 9 and Oracle Linux 9 images. The available versions of Zabbix server are:
+These are the only official Zabbix server Docker images. They are based on Alpine Linux v3.20, Ubuntu 24.04 (noble), CentOS Stream 9 and Oracle Linux 9 images. The available versions of Zabbix server are:
 
     Zabbix server 5.0 (tags: alpine-5.0-latest, ubuntu-5.0-latest, ol-5.0-latest)
     Zabbix server 5.0.* (tags: alpine-5.0.*, ubuntu-5.0.*, ol-5.0.*)
     Zabbix server 6.0 (tags: alpine-6.0-latest, ubuntu-6.0-latest, ol-6.0-latest)
     Zabbix server 6.0.* (tags: alpine-6.0.*, ubuntu-6.0.*, ol-6.0.*)
-    Zabbix server 6.4 (tags: alpine-6.4-latest, ubuntu-6.4-latest, ol-6.4-latest, alpine-latest, ubuntu-latest, ol-latest, latest)
+    Zabbix server 6.4 (tags: alpine-6.4-latest, ubuntu-6.4-latest, ol-6.4-latest)
     Zabbix server 6.4.* (tags: alpine-6.4.*, ubuntu-6.4.*, ol-6.4.*)
-    Zabbix server 7.0 (tags: alpine-trunk, ubuntu-trunk, ol-trunk)
+    Zabbix server 7.0 (tags: alpine-7.0-latest, ubuntu-7.0-latest, ol-7.0-latest, alpine-latest, ubuntu-latest, ol-latest, latest)
+    Zabbix server 7.0.* (tags: alpine-7.0.*, ubuntu-7.0.*, ol-7.0.*)
+    Zabbix server 7.2 (tags: alpine-trunk, ubuntu-trunk, ol-trunk)
 
 Images are updated when new releases are published. The image with ``latest`` tag is based on Alpine Linux.
 
@@ -39,7 +41,7 @@ The image uses PostgreSQL database. It uses the next procedure to start:
 
 Start a Zabbix server container as follows:
 
-    docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -e POSTGRES_USER="some-user" -e POSTGRES_PASSWORD="some-password" -d zabbix/zabbix-server-pgsql:tag
+    docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -e POSTGRES_USER="some-user" -e POSTGRES_PASSWORD="some-password" --init -d zabbix/zabbix-server-pgsql:tag
 
 Where `some-zabbix-server-pgsql` is the name you want to assign to your container, `some-postgres-server` is IP or DNS name of PostgreSQL server, `some-user` is user to connect to Zabbix database on PostgreSQL server, `some-password` is the password to connect to PostgreSQL server and `tag` is the tag specifying the version you want. See the list above for relevant tags, or look at the [full list of tags](https://hub.docker.com/r/zabbix/zabbix-server-pgsql/tags/).
 
@@ -84,7 +86,7 @@ This variable is port of PostgreSQL server. By default, value is '5432'.
 These variables are used by Zabbix server to connect to Zabbix database. With the `_FILE` variables you can instead provide the path to a file which contains the user / the password instead. Without Docker Swarm or Kubernetes you also have to map the files. Those are exclusive so you can just provide one type - either `POSTGRES_USER` or `POSTGRES_USER_FILE`!
 
 ```console
-docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -v ./.POSTGRES_USER:/run/secrets/POSTGRES_USER -e POSTGRES_USER_FILE=/run/secrets/POSTGRES_USER -v ./.POSTGRES_PASSWORD:/run/secrets/POSTGRES_PASSWORD -e POSTGRES_PASSWORD_FILE=/var/run/secrets/POSTGRES_PASSWORD -d zabbix/zabbix-server-pgsql:tag
+docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -v ./.POSTGRES_USER:/run/secrets/POSTGRES_USER -e POSTGRES_USER_FILE=/run/secrets/POSTGRES_USER -v ./.POSTGRES_PASSWORD:/run/secrets/POSTGRES_PASSWORD -e POSTGRES_PASSWORD_FILE=/var/run/secrets/POSTGRES_PASSWORD --init -d zabbix/zabbix-server-pgsql:tag
 ```
 
 With Docker Swarm or Kubernetes this works with secrets. That way it is replicated in your cluster!
@@ -92,7 +94,7 @@ With Docker Swarm or Kubernetes this works with secrets. That way it is replicat
 ```console
 printf "zabbix" | docker secret create POSTGRES_USER -
 printf "zabbix" | docker secret create POSTGRES_PASSWORD -
-docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -e POSTGRES_USER_FILE=/run/secrets/POSTGRES_USER -e POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD -d zabbix/zabbix-server-pgsql:tag
+docker run --name some-zabbix-server-pgsql -e DB_SERVER_HOST="some-postgres-server" -e POSTGRES_USER_FILE=/run/secrets/POSTGRES_USER -e POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD --init -d zabbix/zabbix-server-pgsql:tag
 ```
 
 By default, values for `POSTGRES_USER` and `POSTGRES_PASSWORD` are `zabbix`, `zabbix`.
@@ -140,6 +142,7 @@ ZBX_DBTLSKEYFILE= # Available since 5.0.0
 ZBX_DBTLSCIPHER= # Available since 5.0.0
 ZBX_DBTLSCIPHER13= # Available since 5.0.0
 ZBX_VAULTDBPATH= # Available since 5.2.0
+ZBX_VAULTPREFIX= # Available since 7.0.0
 ZBX_VAULTURL=https://127.0.0.1:8200 # Available since 5.2.0
 VAULT_TOKEN= # Available since 5.2.0
 ZBX_LISTENIP=
@@ -150,8 +153,9 @@ ZBX_WEBSERVICEURL=http://zabbix-web-service:10053/report # Available since 5.4.0
 ZBX_SERVICEMANAGERSYNCFREQUENCY=60 # Available since 6.0.0
 ZBX_HISTORYSTORAGEURL= # Available since 3.4.0
 ZBX_HISTORYSTORAGETYPES=uint,dbl,str,log,text # Available since 3.4.0
+ZBX_ENABLEGLOBALSCRIPTS=0 # Available since 7.0.0
 ZBX_STARTPOLLERS=5
-ZBX_IPMIPOLLERS=0
+ZBX_STARTIPMIPOLLERS=0
 ZBX_STARTCONNECTORS=0 # Available since 6.4.0
 ZBX_STARTPREPROCESSORS=3 # Available since 3.4.0
 ZBX_STARTPOLLERSUNREACHABLE=1
@@ -176,6 +180,7 @@ ZBX_VMWARECACHESIZE=8M
 ZBX_VMWARETIMEOUT=10
 ZBX_ENABLE_SNMP_TRAPS=false
 ZBX_SOURCEIP=
+ZBX_SMSDEVICES=
 ZBX_HOUSEKEEPINGFREQUENCY=1
 ZBX_MAXHOUSEKEEPERDELETE=5000
 ZBX_PROBLEMHOUSEKEEPINGFREQUENCY=60 # Available since 6.0.0
@@ -214,6 +219,8 @@ ZBX_TLSCIPHERCERT= # Available since 4.4.7
 ZBX_TLSCIPHERCERT13= # Available since 4.4.7
 ZBX_TLSCIPHERPSK= # Available since 4.4.7
 ZBX_TLSCIPHERPSK13= # Available since 4.4.7
+ZBX_WEBDRIVERURL= # Available since 7.0.0
+ZBX_STARTBROWSERPOLLERS=1 # Available since 7.0.0
 ```
 
 Default values of these variables are specified after equal sign.
@@ -301,7 +308,7 @@ Please see [the Docker installation documentation](https://docs.docker.com/insta
 
 ## Documentation
 
-Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/6.4/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/6.4/README.md) before attempting a pull request.
+Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/7.0/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/7.0/README.md) before attempting a pull request.
 
 ## Issues
 

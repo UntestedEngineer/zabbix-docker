@@ -394,6 +394,7 @@ update_zbx_config() {
         update_config_var $ZBX_CONFIG "Vault" "${ZBX_VAULT}"
         update_config_var $ZBX_CONFIG "VaultTLSCertFile" "${ZBX_VAULTTLSCERTFILE}"
         update_config_var $ZBX_CONFIG "VaultTLSKeyFile" "${ZBX_VAULTTLSKEYFILE}"
+        update_config_var $ZBX_CONFIG "VaultPrefix" "${ZBX_VAULTPREFIX}"
         update_config_var $ZBX_CONFIG "VaultURL" "${ZBX_VAULTURL}"
         update_config_var $ZBX_CONFIG "VaultDBPath" "${ZBX_VAULTDBPATH}"
 
@@ -408,6 +409,7 @@ update_zbx_config() {
         update_config_var $ZBX_CONFIG "Vault"
         update_config_var $ZBX_CONFIG "VaultTLSCertFile"
         update_config_var $ZBX_CONFIG "VaultTLSKeyFile"
+        update_config_var $ZBX_CONFIG "VaultPrefix"
         update_config_var $ZBX_CONFIG "VaultURL"
         update_config_var $ZBX_CONFIG "VaultDBPath"
 
@@ -416,6 +418,8 @@ update_zbx_config() {
     fi
 
     update_config_var $ZBX_CONFIG "AllowUnsupportedDBVersions" "${ZBX_ALLOWUNSUPPORTEDDBVERSIONS}"
+    update_config_var $ZBX_CONFIG "MaxConcurrentChecksPerPoller" "${ZBX_MAXCONCURRENTCHECKSPERPOLLER}"
+    update_config_var $ZBX_CONFIG "EnableGlobalScripts" "${ZBX_ENABLEGLOBALSCRIPTS}"
 
     update_config_var $ZBX_CONFIG "StartReportWriters" "${ZBX_STARTREPORTWRITERS}"
     : ${ZBX_WEBSERVICEURL:="http://zabbix-web-service:10053/report"}
@@ -436,13 +440,16 @@ update_zbx_config() {
     update_config_var $ZBX_CONFIG "StartPingers" "${ZBX_STARTPINGERS}"
     update_config_var $ZBX_CONFIG "StartDiscoverers" "${ZBX_STARTDISCOVERERS}"
     update_config_var $ZBX_CONFIG "StartHistoryPollers" "${ZBX_STARTHISTORYPOLLERS}"
+    update_config_var $ZBX_CONFIG "StartHTTPAgentPollers" "${ZBX_STARTHTTPAGENTPOLLERS}"
     update_config_var $ZBX_CONFIG "StartHTTPPollers" "${ZBX_STARTHTTPPOLLERS}"
     update_config_var $ZBX_CONFIG "StartODBCPollers" "${ZBX_STARTODBCPOLLERS}"
+    update_config_var $ZBX_CONFIG "StartSNMPPollers" "${ZBX_STARTSNMPPOLLERS}"
 
     update_config_var $ZBX_CONFIG "StartConnectors" "${ZBX_STARTCONNECTORS}"
     update_config_var $ZBX_CONFIG "StartPreprocessors" "${ZBX_STARTPREPROCESSORS}"
     update_config_var $ZBX_CONFIG "StartTimers" "${ZBX_STARTTIMERS}"
     update_config_var $ZBX_CONFIG "StartEscalators" "${ZBX_STARTESCALATORS}"
+    update_config_var $ZBX_CONFIG "StartAgentPollers" "${ZBX_STARTAGENTPOLLERS}"
     update_config_var $ZBX_CONFIG "StartAlerters" "${ZBX_STARTALERTERS}"
 
     update_config_var $ZBX_CONFIG "StartTimers" "${ZBX_STARTTIMERS}"
@@ -475,6 +482,8 @@ update_zbx_config() {
         update_config_var $ZBX_CONFIG "SNMPTrapperFile"
         update_config_var $ZBX_CONFIG "StartSNMPTrapper"
     fi
+
+    update_config_var $ZBX_CONFIG "SocketDir" "/tmp/"
 
     update_config_var $ZBX_CONFIG "HousekeepingFrequency" "${ZBX_HOUSEKEEPINGFREQUENCY}"
 
@@ -540,6 +549,7 @@ update_zbx_config() {
     update_config_var $ZBX_CONFIG "TLSPSKFile" "${ZBX_TLSPSKFILE}"
 
     update_config_var $ZBX_CONFIG "ServiceManagerSyncFrequency" "${ZBX_SERVICEMANAGERSYNCFREQUENCY}"
+    update_config_var $ZBX_CONFIG "AllowSoftwareUpdateCheck" "${ZBX_ALLOWSOFTWAREUPDATECHECK}"
 
     update_config_var $ZBX_CONFIG "SMSDevices" "${ZBX_SMSDEVICES}"
 
@@ -565,6 +575,9 @@ update_zbx_config() {
     else
         update_config_var $ZBX_CONFIG "AllowRoot" "1"
     fi
+
+    update_config_var $ZBX_CONFIG "WebDriverURL" "${ZBX_WEBDRIVERURL}"
+    update_config_var $ZBX_CONFIG "StartBrowserPollers" "${ZBX_STARTBROWSERPOLLERS}"
 }
 
 prepare_db() {

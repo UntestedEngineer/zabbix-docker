@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
-ARG MAJOR_VERSION=6.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.18
+ARG MAJOR_VERSION=7.0
+ARG ZBX_VERSION=${MAJOR_VERSION}.3
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
 
-FROM ubuntu:jammy
+FROM ubuntu:noble
 
 ARG MAJOR_VERSION
 ARG ZBX_VERSION
@@ -19,7 +19,7 @@ ENV TERM=xterm \
 LABEL org.opencontainers.image.authors="Alexey Pustovalov <alexey.pustovalov@zabbix.com>" \
       org.opencontainers.image.description="Zabbix server with PostgreSQL database support" \
       org.opencontainers.image.documentation="https://www.zabbix.com/documentation/${MAJOR_VERSION}/manual/installation/containers" \
-      org.opencontainers.image.licenses="GPL v2.0" \
+      org.opencontainers.image.licenses="AGPL v3.0" \
       org.opencontainers.image.source="${ZBX_SOURCES}" \
       org.opencontainers.image.title="Zabbix server (PostgreSQL)" \
       org.opencontainers.image.url="https://zabbix.com/" \
@@ -37,7 +37,6 @@ RUN --mount=type=cache,target=/var/lib/apt/,sharing=locked \
     set -eux && \
     echo "#!/bin/sh\nexit 101" > /usr/sbin/policy-rc.d && \
     INSTALL_PKGS="bash \
-            tini \
             traceroute \
             nmap \
             tzdata \
@@ -45,15 +44,15 @@ RUN --mount=type=cache,target=/var/lib/apt/,sharing=locked \
             iputils-ping \
             traceroute \
             fping \
-            libcurl4 \
+            libcurl4t64 \
             libevent-2.1 \
             libevent-pthreads-2.1 \
-            libopenipmi0 \
+            libopenipmi0t64 \
             libpcre2-8-0 \
             libpq5 \
-            libsnmp40 \
+            libsnmp40t64 \
             libssh-4 \
-            libssl3 \
+            libssl3t64 \
             libxml2 \
             postgresql-client \
             snmp-mibs-downloader \
@@ -112,7 +111,7 @@ VOLUME ["/var/lib/zabbix/snmptraps", "/var/lib/zabbix/export"]
 
 COPY ["docker-entrypoint.sh", "/usr/bin/"]
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/bin/docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/docker-entrypoint.sh"]
 
 USER 1997
 
