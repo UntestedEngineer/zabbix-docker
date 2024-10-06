@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=7.0
-ARG ZBX_VERSION=${MAJOR_VERSION}.3
+ARG ZBX_VERSION=${MAJOR_VERSION}.4
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -81,6 +81,7 @@ RUN set -eux && \
     mkdir -p /usr/lib/zabbix/alertscripts && \
     mkdir -p /var/lib/zabbix/dbscripts && \
     mkdir -p /var/lib/zabbix/enc && \
+    mkdir -p /var/lib/zabbix/enc_internal && \
     mkdir -p /var/lib/zabbix/export && \
     mkdir -p /usr/lib/zabbix/externalscripts && \
     mkdir -p /var/lib/zabbix/mibs && \
