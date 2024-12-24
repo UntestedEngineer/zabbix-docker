@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1
 ARG MAJOR_VERSION=7.0
-ARG ZBX_VERSION=${MAJOR_VERSION}.6
+ARG ZBX_VERSION=${MAJOR_VERSION}.7
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
 
-FROM alpine:3.20
+FROM alpine:3.21
 
 ARG MAJOR_VERSION
 ARG ZBX_VERSION
@@ -49,7 +49,7 @@ RUN set -eux && \
             net-snmp-agent-libs \
             openipmi-libs \
             pcre2 \
-            postgresql16-client \
+            postgresql17-client \
             gzip \
             unixodbc \
             zlib \
