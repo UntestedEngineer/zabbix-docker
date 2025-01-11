@@ -13,10 +13,6 @@ fi
 : ${ENABLE_TIMESCALEDB:="false"}
 
 # Default directories
-# User 'zabbix' home directory
-ZABBIX_USER_HOME_DIR="/var/lib/zabbix"
-# Configuration files directory
-ZABBIX_ETC_DIR="/etc/zabbix"
 # Internal directory for TLS related files, used when TLS*File specified as plain text values
 ZABBIX_INTERNAL_ENC_DIR="${ZABBIX_USER_HOME_DIR}/enc_internal"
 
@@ -87,16 +83,20 @@ update_config_var() {
         echo -n "** Updating '$config_path' parameter \"$var_name\": '$var_value'..."
     fi
 
-    # Remove configuration parameter definition in case of unset parameter value
+    # Remove configuration parameter definition in case of unset or empty parameter value
     if [ -z "$var_value" ]; then
         sed -i -e "/^$var_name=/d" "$config_path"
         echo "removed"
         return
     fi
 
-    # Remove value from configuration parameter in case of double quoted parameter value
-    if [ "$var_value" == '""' ]; then
-        sed -i -e "/^$var_name=/s/=.*/=/" "$config_path"
+    # Remove value from configuration parameter in case of set to double quoted parameter value
+    if [[ "$var_value" == '""' ]]; then
+        if [ "$(grep -E "^$var_name=" $config_path)" ]; then
+            sed -i -e "/^$var_name=/s/=.*/=/" "$config_path"
+        else
+            sed -i -e "/^[#;] $var_name=/s/.*/&\n$var_name=/" "$config_path"
+        fi
         echo "undefined"
         return
     fi
@@ -110,7 +110,9 @@ update_config_var() {
     var_value=$(escape_spec_char "$var_value")
     var_name=$(escape_spec_char "$var_name")
 
-    if [ "$(grep -E "^$var_name=" $config_path)" ] && [ "$is_multiple" != "true" ]; then
+    if [ "$(grep -E "^$var_name=$var_value" $config_path)" ]; then
+        echo "exists"
+    elif [ "$(grep -E "^$var_name=" $config_path)" ] && [ "$is_multiple" != "true" ]; then
         sed -i -e "/^$var_name=/s/=.*/=$var_value/" "$config_path"
         echo "updated"
     elif [ "$(grep -Ec "^# $var_name=" $config_path)" -gt 1 ]; then
@@ -154,11 +156,11 @@ file_process_from_env() {
 
 # Check prerequisites for PostgreSQL database
 check_variables_postgresql() {
+    : ${DB_SERVER_HOST="postgres-server"}
+    : ${DB_SERVER_PORT:="5432"}
+
     file_env POSTGRES_USER
     file_env POSTGRES_PASSWORD
-
-    : ${DB_SERVER_HOST:="postgres-server"}
-    : ${DB_SERVER_PORT:="5432"}
 
     DB_SERVER_ROOT_USER=${POSTGRES_USER:-"postgres"}
     DB_SERVER_ROOT_PASS=${POSTGRES_PASSWORD:-""}
@@ -171,12 +173,24 @@ check_variables_postgresql() {
     DB_SERVER_DBNAME=${POSTGRES_DB:-"zabbix"}
 
     : ${POSTGRES_USE_IMPLICIT_SEARCH_PATH:="false"}
+
+    if [ -n "${DB_SERVER_HOST}" ]; then
+        psql_connect_args="--host ${DB_SERVER_HOST} --port ${DB_SERVER_PORT}"
+    else
+        DB_SERVER_HOST='""'
+        psql_connect_args="--port ${DB_SERVER_PORT}"
+    fi
 }
 
 check_db_connect_postgresql() {
     echo "********************"
-    echo "* DB_SERVER_HOST: ${DB_SERVER_HOST}"
-    echo "* DB_SERVER_PORT: ${DB_SERVER_PORT}"
+    if [[ "$DB_SERVER_HOST" != '""' ]]; then
+        echo "* DB_SERVER_HOST: ${DB_SERVER_HOST}"
+        echo "* DB_SERVER_PORT: ${DB_SERVER_PORT}"
+    else
+        echo "* DB_SERVER_HOST: Using DB socket"
+        echo "* DB_SERVER_PORT: ${DB_SERVER_PORT}"
+    fi
     echo "* DB_SERVER_DBNAME: ${DB_SERVER_DBNAME}"
     echo "* DB_SERVER_SCHEMA: ${DB_SERVER_SCHEMA}"
     if [ "${DEBUG_MODE,,}" == "true" ]; then
@@ -206,8 +220,8 @@ check_db_connect_postgresql() {
 
     while true :
     do
-        psql --host ${DB_SERVER_HOST} --port ${DB_SERVER_PORT} --username ${DB_SERVER_ROOT_USER} --list --quiet 1>/dev/null 2>&1 && break
-        psql --host ${DB_SERVER_HOST} --port ${DB_SERVER_PORT} --username ${DB_SERVER_ROOT_USER} --list --dbname ${DB_SERVER_DBNAME} --quiet 1>/dev/null 2>&1 && break
+        psql $psql_connect_args --username ${DB_SERVER_ROOT_USER} --list --quiet 1>/dev/null 2>&1 && break
+        psql $psql_connect_args --username ${DB_SERVER_ROOT_USER} --list --dbname ${DB_SERVER_DBNAME} --quiet 1>/dev/null 2>&1 && break
 
         echo "**** PostgreSQL server is not available. Waiting $WAIT_TIMEOUT seconds..."
         sleep $WAIT_TIMEOUT
@@ -244,7 +258,7 @@ psql_query() {
         export PGSSLKEY=${ZBX_DBTLSKEYFILE}
     fi
 
-    result=$(psql --no-align --quiet --tuples-only --host "${DB_SERVER_HOST}" --port "${DB_SERVER_PORT}" \
+    result=$(psql --no-align --quiet --tuples-only $psql_connect_args \
              --username "${DB_SERVER_ROOT_USER}" --command "$query" --dbname "$db" 2>/dev/null);
 
     unset PGPASSWORD
@@ -284,7 +298,7 @@ exec_sql_file() {
     fi
 
     $command $sql_script | psql --quiet \
-        --host "${DB_SERVER_HOST}" --port "${DB_SERVER_PORT}" \
+        $psql_connect_args \
         --username "${DB_SERVER_ZBX_USER}" --dbname "${DB_SERVER_DBNAME}" 1>/dev/null || exit 1
 
     unset PGPASSWORD
@@ -318,7 +332,7 @@ create_db_database_postgresql() {
             export PGSSLKEY=${ZBX_DBTLSKEYFILE}
         fi
 
-        createdb --host "${DB_SERVER_HOST}" --port "${DB_SERVER_PORT}" --username "${DB_SERVER_ROOT_USER}" \
+        createdb $psql_connect_args --username "${DB_SERVER_ROOT_USER}" \
                  --owner "${DB_SERVER_ZBX_USER}" --lc-ctype "en_US.utf8" --lc-collate "en_US.utf8" "${DB_SERVER_DBNAME}"
 
         unset PGPASSWORD
@@ -367,17 +381,14 @@ create_db_schema_postgresql() {
             exec_sql_file "/usr/share/doc/zabbix-server-postgresql/timescaledb.sql"
         fi
 
-        apply_db_scripts "/var/lib/zabbix/dbscripts/*.sql"
+        apply_db_scripts "${ZABBIX_USER_HOME_DIR}/dbscripts/*.sql"
     fi
 }
 
 update_zbx_config() {
-    local type=$1
-    local db_type=$2
-
     echo "** Preparing Zabbix server configuration file"
 
-    ZBX_CONFIG=$ZABBIX_ETC_DIR/zabbix_server.conf
+    ZBX_CONFIG=$ZABBIX_CONF_DIR/zabbix_server.conf
 
     update_config_var $ZBX_CONFIG "ListenIP" "${ZBX_LISTENIP}"
     update_config_var $ZBX_CONFIG "ListenPort" "${ZBX_LISTENPORT}"
@@ -532,8 +543,8 @@ update_zbx_config() {
         update_config_var $ZBX_CONFIG "ExportType" "${ZBX_EXPORTTYPE}"
     fi
 
-    update_config_var $ZBX_CONFIG "FpingLocation" "/usr/bin/fping"
-    update_config_var $ZBX_CONFIG "Fping6Location"
+    update_config_var $ZBX_CONFIG "FpingLocation" "${ZBX_FPINGLOCATION}"
+    update_config_var $ZBX_CONFIG "Fping6Location" '""'
 
     update_config_var $ZBX_CONFIG "SSHKeyLocation" "$ZABBIX_USER_HOME_DIR/ssh_keys"
     update_config_var $ZBX_CONFIG "LogSlowQueries" "${ZBX_LOGSLOWQUERIES}"
