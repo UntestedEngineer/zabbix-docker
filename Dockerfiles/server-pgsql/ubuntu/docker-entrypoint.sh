@@ -110,7 +110,7 @@ update_config_var() {
     var_value=$(escape_spec_char "$var_value")
     var_name=$(escape_spec_char "$var_name")
 
-    if [ "$(grep -E "^$var_name=$var_value" $config_path)" ]; then
+    if [ "$(grep -E "^$var_name=$var_value$" $config_path)" ]; then
         echo "exists"
     elif [ "$(grep -E "^$var_name=" $config_path)" ] && [ "$is_multiple" != "true" ]; then
         sed -i -e "/^$var_name=/s/=.*/=$var_value/" "$config_path"
@@ -601,6 +601,8 @@ update_zbx_config() {
 
     update_config_var $ZBX_CONFIG "WebDriverURL" "${ZBX_WEBDRIVERURL}"
     update_config_var $ZBX_CONFIG "StartBrowserPollers" "${ZBX_STARTBROWSERPOLLERS}"
+
+    command -v openssl >/dev/null 2>&1 && openssl rehash -v "$ZABBIX_USER_HOME_DIR/ssl/ssl_ca/" 1>/dev/null
 }
 
 clear_zbx_env() {

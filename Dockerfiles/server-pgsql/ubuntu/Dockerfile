@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1
+ARG OS_BASE_IMAGE=ubuntu:plucky
 ARG MAJOR_VERSION=7.0
-ARG ZBX_VERSION=${MAJOR_VERSION}.8
+ARG ZBX_VERSION=${MAJOR_VERSION}.9
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
 
-FROM ubuntu:noble
+FROM ${OS_BASE_IMAGE}
 
 ARG MAJOR_VERSION
 ARG ZBX_VERSION
@@ -48,6 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             iputils-ping \
             traceroute \
             fping \
+            openssl \
             libcurl4t64 \
             libevent-2.1 \
             libevent-pthreads-2.1 \
