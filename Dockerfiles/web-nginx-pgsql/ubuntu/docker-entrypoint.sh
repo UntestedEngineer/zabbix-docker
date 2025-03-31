@@ -30,7 +30,7 @@ NGINX_CONFD_DIR="/etc/nginx/conf.d"
 # Directory with SSL certificate files for Nginx
 NGINX_SSL_CONFIG_DIR="/etc/ssl/nginx"
 # PHP-FPM configuration file
-PHP_CONFIG_FILE="/etc/php/8.3/fpm/pool.d/zabbix.conf"
+PHP_CONFIG_FILE="/etc/php/8.4/fpm/pool.d/zabbix.conf"
 
 # usage: file_env VAR [DEFAULT]
 # as example: file_env 'MYSQL_PASSWORD' 'zabbix'
@@ -328,6 +328,14 @@ prepare_zbx_php_config() {
     sed -i \
         -e "s/{EXPOSE_WEB_SERVER_INFO}/${EXPOSE_WEB_SERVER_INFO}/g" \
     "$NGINX_CONF_FILE"
+}
+
+prepare_zbx_config() {
+    if [ -n "${ZBX_SESSION_NAME}" ]; then
+        cp "$ZABBIX_WWW_ROOT/include/defines.inc.php" "/tmp/defines.inc.php_tmp"
+        sed "/ZBX_SESSION_NAME/s/'[^']*'/'${ZBX_SESSION_NAME}'/2" "/tmp/defines.inc.php_tmp" > "$ZABBIX_WWW_ROOT/include/defines.inc.php"
+        rm -f "/tmp/defines.inc.php_tmp"
+    fi
 }
 
 #################################################
