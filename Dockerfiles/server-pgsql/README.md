@@ -225,6 +225,8 @@ ZBX_TLSCIPHERPSK= # Available since 4.4.7
 ZBX_TLSCIPHERPSK13= # Available since 4.4.7
 ZBX_WEBDRIVERURL= # Available since 7.0.0
 ZBX_STARTBROWSERPOLLERS=1 # Available since 7.0.0
+ZBX_STARTSNMPPOLLERS=1 # Available since 7.0.0
+
 ```
 
 Default values of these variables are specified after equal sign.
@@ -312,7 +314,7 @@ Please see [the Docker installation documentation](https://docs.docker.com/insta
 
 ## Documentation
 
-Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/7.0/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/7.0/README.md) before attempting a pull request.
+Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/7.2/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/7.2/README.md) before attempting a pull request.
 
 ## Issues
 
