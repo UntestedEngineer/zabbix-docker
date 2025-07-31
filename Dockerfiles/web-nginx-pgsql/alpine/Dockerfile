@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG OS_BASE_IMAGE=alpine:3.22
 ARG MAJOR_VERSION=7.2
-ARG ZBX_VERSION=${MAJOR_VERSION}.10
+ARG ZBX_VERSION=${MAJOR_VERSION}.11
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -89,7 +89,6 @@ RUN set -eux && \
     cd ${ZABBIX_WWW_ROOT}/ && \
     rm -f conf/zabbix.conf.php conf/maintenance.inc.php conf/zabbix.conf.php.example && \
     rm -rf tests && \
-    rm -f locale/add_new_language.sh locale/update_po.sh locale/make_mo.sh && \
     find ${ZABBIX_WWW_ROOT}/locale -name '*.po' | xargs rm -f && \
     find ${ZABBIX_WWW_ROOT}/locale -name '*.sh' | xargs rm -f && \
     ln -s "${ZABBIX_CONF_DIR}/web/zabbix.conf.php" "${ZABBIX_WWW_ROOT}/conf/zabbix.conf.php" && \
