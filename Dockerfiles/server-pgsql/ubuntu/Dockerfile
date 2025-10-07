@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG OS_BASE_IMAGE=ubuntu:plucky
-ARG MAJOR_VERSION=7.2
-ARG ZBX_VERSION=${MAJOR_VERSION}.11
+ARG MAJOR_VERSION=7.4
+ARG ZBX_VERSION=${MAJOR_VERSION}.3
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -122,7 +122,7 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
     chmod g=u ${ZABBIX_CONF_DIR} && \
     /usr/sbin/zabbix_server -V
 
-EXPOSE 10051/TCP
+EXPOSE 10051/tcp
 
 WORKDIR ${ZABBIX_USER_HOME_DIR}
 

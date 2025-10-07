@@ -9,6 +9,9 @@ if [ "${DEBUG_MODE,,}" == "true" ]; then
     set -o xtrace
 fi
 
+# Internal directory for TLS related files, used when TLS*File specified as plain text values
+ZABBIX_INTERNAL_ENC_DIR="${ZABBIX_USER_HOME_DIR}/enc_internal"
+
 # Default Zabbix installation name
 # Used only by Zabbix web-interface
 : ${ZBX_SERVER_NAME:="Zabbix docker"}
@@ -70,6 +73,22 @@ file_env() {
     fi
     export "$var"="$val"
     unset "$fileVar"
+}
+
+file_process_from_env() {
+    local var_name=$1
+    local file_name=$2
+    local var_value=$3
+
+    if [ ! -z "$var_value" ]; then
+        echo -n "$var_value" > "${ZABBIX_INTERNAL_ENC_DIR}/$var_name"
+        file_name="${ZABBIX_INTERNAL_ENC_DIR}/${var_name}"
+    fi
+
+    export "$var_name"="$file_name"
+
+    # Remove variable with plain text data
+    unset "${var_name%%FILE}"
 }
 
 # Check prerequisites for PostgreSQL database
@@ -310,11 +329,13 @@ prepare_zbx_php_config() {
     : ${ZBX_ALLOW_HTTP_AUTH:="true"}
     export ZBX_ALLOW_HTTP_AUTH=${ZBX_ALLOW_HTTP_AUTH}
 
-    if [ -n "${ZBX_SESSION_NAME}" ]; then
-        cp "$ZABBIX_WWW_ROOT/include/defines.inc.php" "/tmp/defines.inc.php_tmp"
-        sed "/ZBX_SESSION_NAME/s/'[^']*'/'${ZBX_SESSION_NAME}'/2" "/tmp/defines.inc.php_tmp" > "$ZABBIX_WWW_ROOT/include/defines.inc.php"
-        rm -f "/tmp/defines.inc.php_tmp"
-    fi
+    : ${ZBX_SERVER_TLS_ACTIVE:="0"}
+    export ZBX_SERVER_TLS_ACTIVE=${ZBX_SERVER_TLS_ACTIVE}
+    file_process_from_env "ZBX_SERVER_TLS_CAFILE" "${ZBX_SERVER_TLS_CAFILE}" "${ZBX_SERVER_TLS_CA}"
+    file_process_from_env "ZBX_SERVER_TLS_KEYFILE" "${ZBX_SERVER_TLS_KEYFILE}" "${ZBX_SERVER_TLS_KEY}"
+    file_process_from_env "ZBX_SERVER_TLS_CERTFILE" "${ZBX_SERVER_TLS_CERTFILE}" "${ZBX_SERVER_TLS_CERT}"
+    export ZBX_SERVER_TLS_CERT_ISSUER=${ZBX_SERVER_TLS_CERT_ISSUER}
+    export ZBX_SERVER_TLS_CERT_SUBJECT=${ZBX_SERVER_TLS_CERT_SUBJECT}
 }
 
 prepare_zbx_config() {

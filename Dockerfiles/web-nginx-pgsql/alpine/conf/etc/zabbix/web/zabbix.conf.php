@@ -105,3 +105,10 @@ $sso_settings = str_replace("'","\"",getenv('ZBX_SSO_SETTINGS'));
 $SSO['SETTINGS'] = (json_decode($sso_settings)) ? json_decode($sso_settings, true) : array();
 
 $ALLOW_HTTP_AUTH = getenv('ZBX_ALLOW_HTTP_AUTH') == 'true' ? true: false;
+
+$ZBX_SERVER_TLS['ACTIVE'] = getenv('ZBX_SERVER_TLS_ACTIVE') == 'true' ? '1': '0';
+$ZBX_SERVER_TLS['CA_FILE'] = file_exists(getenv('ZBX_SERVER_TLS_CAFILE')) ? getenv('ZBX_SERVER_TLS_CAFILE') : '';
+$ZBX_SERVER_TLS['KEY_FILE'] = file_exists(getenv('ZBX_SERVER_TLS_KEYFILE')) ? getenv('ZBX_SERVER_TLS_KEYFILE') : '';
+$ZBX_SERVER_TLS['CERT_FILE'] = file_exists(getenv('ZBX_SERVER_TLS_CERTFILE')) ? getenv('ZBX_SERVER_TLS_CERTFILE') : '';
+$ZBX_SERVER_TLS['CERTIFICATE_ISSUER']  = getenv('ZBX_SERVER_TLS_CERT_ISSUER');
+$ZBX_SERVER_TLS['CERTIFICATE_SUBJECT'] = getenv('ZBX_SERVER_TLS_CERT_SUBJECT');
