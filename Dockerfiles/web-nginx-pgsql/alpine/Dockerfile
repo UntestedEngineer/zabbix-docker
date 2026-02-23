@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
-ARG OS_BASE_IMAGE=alpine:3.22
+ARG OS_BASE_IMAGE=alpine:3.23
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.5
-ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-7.4-latest
+ARG ZBX_VERSION=${MAJOR_VERSION}.6
+ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
 

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG OS_BASE_IMAGE=ubuntu:plucky
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.5
+ARG ZBX_VERSION=${MAJOR_VERSION}.6
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -102,9 +102,9 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
     chown --quiet -R zabbix:root ${ZABBIX_CONF_DIR}/ ${ZABBIX_WWW_ROOT}/include/defines.inc.php ${ZABBIX_WWW_ROOT}/modules/ && \
     chgrp -R 0 ${ZABBIX_CONF_DIR}/ ${ZABBIX_WWW_ROOT}/include/defines.inc.php ${ZABBIX_WWW_ROOT}/modules/ && \
     chmod -R g=u ${ZABBIX_CONF_DIR}/ ${ZABBIX_WWW_ROOT}/include/defines.inc.php ${ZABBIX_WWW_ROOT}/modules/ && \
-    chown --quiet -R zabbix:root /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
-    chgrp -R 0 /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
-    chmod -R g=u /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
+    chown --quiet -R zabbix:root ${ZABBIX_USER_HOME_DIR}/ /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
+    chgrp -R 0 ${ZABBIX_USER_HOME_DIR}/ /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
+    chmod -R g=u ${ZABBIX_USER_HOME_DIR}/ /etc/nginx/ /etc/php/8.4/fpm/php-fpm.conf /etc/php/8.4/fpm/pool.d/ && \
     chown --quiet -R zabbix:root /var/lib/php/session/ && \
     chgrp -R 0 /var/lib/php/session/ && \
     chmod -R g=u /var/lib/php/session/
