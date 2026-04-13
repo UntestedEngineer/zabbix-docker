@@ -6,8 +6,7 @@ on:
       - published
   push:
     branches:
-      - '[0-9]+.[0-9]+'
-      - 'trunk'
+      - '*'
     paths:
       - 'Dockerfiles/**'
       - 'build.json'
