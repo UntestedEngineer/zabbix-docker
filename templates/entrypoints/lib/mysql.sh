@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 : "${DB_CHARACTER_SET:=utf8mb4}"
 : "${DB_CHARACTER_COLLATE:=utf8mb4_bin}"
 
@@ -27,6 +29,8 @@ set_mysql_cli() {
 set_mysql_tls_args() {
     MYSQL_TLS_ARGS=()
 
+    [ "${ZBX_DB_ENCRYPTION:-}" = "true" ] && export ZBX_DBTLSCONNECT=required
+
     if [ -n "${ZBX_DBTLSCONNECT:-}" ]; then
         if [ "${DB_ENGINE}" = "mariadb" ]; then
             MYSQL_TLS_ARGS+=(--ssl)
@@ -36,7 +40,7 @@ set_mysql_tls_args() {
             fi
         else
             local ssl_mode="${ZBX_DBTLSCONNECT//verify_full/verify_identity}"
-            MYSQL_TLS_ARGS+=("--ssl=${ssl_mode}")
+            MYSQL_TLS_ARGS+=("--ssl-mode=${ssl_mode}")
         fi
 
         if [ -n "${ZBX_DBTLSCAFILE:-}" ]; then
@@ -222,7 +226,7 @@ mysql_query() {
                 -u "${DB_SERVER_ROOT_USER}" \
                 -e "$query" \
                 "${MYSQL_TLS_ARGS[@]}"
-        } 2>/dev/null
+        }
     )"
 
     clear_mysql_auth_env
@@ -230,15 +234,17 @@ mysql_query() {
 }
 
 exec_sql_file() {
-    local sql_script="${1:-}"
+    local sql_file="${1:-}"
     local command="cat"
+
+    [ -f "$sql_file" ] || error "SQL script does not exist: $sql_file"
 
     set_mysql_tls_args
     set_mysql_auth_env
 
-    [ "${sql_script: -3}" = ".gz" ] && command="zcat"
+    [ "${sql_file: -3}" = ".gz" ] && command="zcat"
 
-    "$command" "$sql_script" | "$MYSQL_CLI_BIN" \
+    "$command" "$sql_file" | "$MYSQL_CLI_BIN" \
         --silent \
         --skip-column-names \
         "${MYSQL_EXTRA_ARGS[@]}" \

@@ -2,15 +2,15 @@
   "os-linux": {
     "alpine": [
       "linux/amd64",
-      "linux/arm64",
+      "linux/arm64"
     ],
     "ubuntu": [
       "linux/amd64",
-      "linux/arm64",
+      "linux/arm64"
     ]
   },
   "components": {
     "server-pgsql": { "base": "build-pgsql", "rhel": true },
-    "web-nginx-pgsql": { "base": "build-mysql", "rhel": true },
+    "web-nginx-pgsql": { "base": "build-mysql", "rhel": true }
   }
 }

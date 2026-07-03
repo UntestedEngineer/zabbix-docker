@@ -1,3 +1,5 @@
+# shellcheck shell=bash
+
 # Enable PostgreSQL timescaleDB feature
 : "${ENABLE_TIMESCALEDB:=false}"
 
@@ -8,10 +10,12 @@ set_pg_env() {
         export PGOPTIONS="--search_path=${DB_SERVER_SCHEMA}"
     fi
 
+    [ "${ZBX_DB_ENCRYPTION:-}" = "true" ] && export ZBX_DBTLSCONNECT=required
+
     if [ -n "${ZBX_DBTLSCONNECT:-}" ]; then
         local pg_sslmode
         pg_sslmode="${ZBX_DBTLSCONNECT//_/-}"
-        export PGSSLMODE="${pgsslmode//required/require}"
+        export PGSSLMODE="${pg_sslmode//required/require}"
         export PGSSLROOTCERT="${ZBX_DBTLSCAFILE:-}"
         export PGSSLCERT="${ZBX_DBTLSCERTFILE:-}"
         export PGSSLKEY="${ZBX_DBTLSKEYFILE:-}"
@@ -43,7 +47,7 @@ check_db_variables() {
     DB_SERVER_DBNAME="${POSTGRES_DB:-$default_db_name}"
 
     psql_connect_args=(--port "${DB_SERVER_PORT}")
-    [ -n "${DB_SERVER_HOST}" ] && psql_connect_args=(--host "${DB_SERVER_HOST}")
+    [ -n "${DB_SERVER_HOST}" ] && psql_connect_args+=(--host "${DB_SERVER_HOST}")
 }
 
 get_vault_secrets() {
@@ -148,7 +152,7 @@ psql_query() {
             "${psql_connect_args[@]}" \
             --username "${DB_SERVER_ROOT_USER}" \
             --command "$query" \
-            --dbname "$db" 2>/dev/null
+            --dbname "$db"
     })"
 
     clear_pg_env

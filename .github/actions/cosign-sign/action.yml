@@ -8,6 +8,12 @@ inputs:
   tags:
     required: true
     description: Newline-separated image tags
+  COSIGN_PASSWORD:
+    required: false
+    description: Local password for cosign private key
+  COSIGN_PRIVATE_KEY:
+    required: false
+    description: Local private key for cosign
 
 runs:
   using: composite
@@ -18,6 +24,9 @@ runs:
       env:
         DIGEST: ${{ inputs.digest }}
         TAGS: ${{ inputs.tags }}
+        COSIGN_PASSWORD: ${{ inputs.COSIGN_PASSWORD }}
+        COSIGN_PRIVATE_KEY: ${{ inputs.COSIGN_PRIVATE_KEY }}
+
       run: |
         set -euo pipefail
 
@@ -38,34 +47,5 @@ runs:
         echo "::endgroup::"
 
         echo "::group::Signing"
-        cosign sign --yes "${images[@]}"
+        cosign sign --key env://COSIGN_PRIVATE_KEY "${images[@]}"
         echo "::endgroup::"
-
-    - name: Sign images on Windows
-      if: runner.os == 'Windows'
-      shell: pwsh
-      env:
-        DIGEST: ${{ inputs.digest }}
-        TAGS: ${{ inputs.tags }}
-      run: |
-        $ErrorActionPreference = 'Stop'
-        Set-StrictMode -Version Latest
-
-        $images = @()
-        $tagsArray = $Env:TAGS -split "\r?\n" | Where-Object { $_.Trim() }
-
-        foreach ($tag in $tagsArray) {
-          $images += "$tag@$Env:DIGEST"
-        }
-
-        if ($images.Count -eq 0) {
-          throw 'No image tags provided'
-        }
-
-        Write-Output '::group::Images to sign'
-        $images | ForEach-Object { Write-Output $_ }
-        Write-Output '::endgroup::'
-
-        Write-Output '::group::Signing'
-        cosign sign --yes $images
-        Write-Output '::endgroup::'

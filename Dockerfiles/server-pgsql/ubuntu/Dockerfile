@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
-ARG OS_BASE_IMAGE=ubuntu:questing
+ARG OS_BASE_IMAGE=ubuntu:resolute
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.9
+ARG ZBX_VERSION=${MAJOR_VERSION}.10
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -59,9 +59,9 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             tzdata \
             ca-certificates \
             iputils-ping \
-            traceroute \
             fping \
             openssl \
+            libc6 \
             libcares2 \
             libcurl4t64 \
             libevent-2.1 \
@@ -73,7 +73,7 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             libsnmp40t64 \
             libssh-4 \
             libssl3t64 \
-            libxml2 \
+            libxml2-16 \
             postgresql-client \
             snmp-mibs-downloader \
             gzip \
@@ -84,8 +84,20 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             expect" && \
     apt-get -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y \
+            -o Dpkg::Options::="--force-confdef" \
+            -o Dpkg::Options::="--force-confold" \
             --no-install-recommends install \
         ${INSTALL_PKGS} && \
+    rm -f \
+        /var/lib/mibs/ietf/VM-MIB \
+        /var/lib/mibs/ietf/TRILL-OAM-MIB \
+        /var/lib/mibs/ietf/SMF-MIB \
+        /var/lib/mibs/ietf/ENERGY-OBJECT-MIB \
+        /var/lib/mibs/ietf/POWER-ATTRIBUTES-MIB \
+        /var/lib/mibs/ietf/OLSRv2-MIB \
+        /var/lib/mibs/ietf/ENERGY-OBJECT-CONTEXT-MIB \
+        /var/lib/mibs/ietf/BFD-STD-MIB \
+        /var/lib/mibs/ietf/SNMPv2-PDU && \
     groupadd \
             --system \
             --gid 1995 \

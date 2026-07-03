@@ -9,7 +9,7 @@ inputs:
 
   qemu_image:
     required: false
-    default: tonistiigi/binfmt:qemu-v10.0.4
+    default: tonistiigi/binfmt:qemu-v10.2.1
     description: QEMU binfmt image
 
   qemu_platforms:
@@ -19,7 +19,7 @@ inputs:
 
   buildkit_image:
     required: false
-    default: moby/buildkit:v0.28.1
+    default: moby/buildkit:v0.29.0
     description: BuildKit image
 
   docker_username:
@@ -36,19 +36,19 @@ runs:
   using: composite
   steps:
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+      uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       with:
         image: ${{ inputs.qemu_image }}
         platforms: ${{ inputs.qemu_platforms }}
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
       with:
         driver-opts: image=${{ inputs.buildkit_image }}
 
     - name: Login to DockerHub
-      if: ${{ inputs.auto_push_images == 'true' }}
-      uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+      # if: ${{ inputs.auto_push_images == 'true' }}
+      uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
       with:
         username: ${{ inputs.docker_username }}
         password: ${{ inputs.docker_password }}
