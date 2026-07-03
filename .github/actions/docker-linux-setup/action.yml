@@ -9,7 +9,7 @@ inputs:
 
   qemu_image:
     required: false
-    default: tonistiigi/binfmt:qemu-v10.2.1
+    default: tonistiigi/binfmt:qemu-v10.2.3
     description: QEMU binfmt image
 
   qemu_platforms:
@@ -19,7 +19,7 @@ inputs:
 
   buildkit_image:
     required: false
-    default: moby/buildkit:v0.29.0
+    default: moby/buildkit:v0.31.1
     description: BuildKit image
 
   docker_username:
