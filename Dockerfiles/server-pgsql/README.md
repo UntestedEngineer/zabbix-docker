@@ -16,7 +16,7 @@ The server performs the polling and trapping of data, it calculates triggers, se
 
 # Zabbix server images
 
-These are the only official Zabbix server Docker images. They are based on Alpine Linux v3.22, Ubuntu 24.04 (noble), CentOS Stream 10 and Oracle Linux 10 images. The available versions of Zabbix server are:
+These are the only official Zabbix server Docker images. They are based on Alpine Linux v3.24, Ubuntu 26.04 (resolute), CentOS Stream 10 and Oracle Linux 10 images. The available versions of Zabbix server are:
 
     Zabbix server 6.0 (tags: alpine-6.0-latest, ubuntu-6.0-latest, ol-6.0-latest)
     Zabbix server 6.0.* (tags: alpine-6.0.*, ubuntu-6.0.*, ol-6.0.*)
@@ -125,10 +125,6 @@ The variable is used to specify debug level. By default, value is ``3``. It is `
 
 The variable is used to specify timeout for processing checks. By default, value is ``4``.
 
-### ``ZBX_JAVAGATEWAY_ENABLE``
-
-The variable enable communication with Zabbix Java Gateway to collect Java related checks. By default, value is `false`.
-
 ### Other variables
 
 Additionally the image allows to specify many other environment variables listed below:
@@ -184,7 +180,7 @@ ZBX_SMSDEVICES=
 ZBX_HOUSEKEEPINGFREQUENCY=1
 ZBX_MAXHOUSEKEEPERDELETE=5000
 ZBX_PROBLEMHOUSEKEEPINGFREQUENCY=60 # Available since 6.0.0
-ZBX_SENDERFREQUENCY=30 # Depcrecated since 3.4.0
+ZBX_SENDERFREQUENCY=30 # Deprecated since 3.4.0
 ZBX_CACHESIZE=8M
 ZBX_CACHEUPDATEFREQUENCY=10
 ZBX_STARTDBSYNCERS=4
@@ -209,6 +205,7 @@ ZBX_LOGSLOWQUERIES=3000
 ZBX_STARTPROXYPOLLERS=1
 ZBX_PROXYCONFIGFREQUENCY=10
 ZBX_PROXYDATAFREQUENCY=1
+ZBX_TLSLISTEN= # Available since 7.4.0
 ZBX_TLSCAFILE=
 ZBX_TLSCA=
 ZBX_TLSCRLFILE=
@@ -223,6 +220,10 @@ ZBX_TLSCIPHERCERT= # Available since 4.4.7
 ZBX_TLSCIPHERCERT13= # Available since 4.4.7
 ZBX_TLSCIPHERPSK= # Available since 4.4.7
 ZBX_TLSCIPHERPSK13= # Available since 4.4.7
+ZBX_TLS_FRONTENDACCEPT= # Available since 7.4.0
+ZBX_FRONTENDALLOWEDIP= # Available since 7.4.0
+ZBX_TLSFRONTENDCERTISSUER= # Available since 7.4.0
+ZBX_TLSFRONTENDCERTSUBJECT= # Available since 7.4.0
 ZBX_WEBDRIVERURL= # Available since 7.0.0
 ZBX_STARTBROWSERPOLLERS=1 # Available since 7.0.0
 ZBX_STARTSNMPPOLLERS=1 # Available since 7.0.0
@@ -259,7 +260,7 @@ The volume is used as location of public and private keys for SSH checks and act
 
 ### ``/var/lib/zabbix/ssl/certs``
 
-The volume is used as location of of SSL client certificate files for client authentication. It is `SSLCertLocation` parameter in ``zabbix_server.conf``.
+The volume is used as location of SSL client certificate files for client authentication. It is `SSLCertLocation` parameter in ``zabbix_server.conf``.
 
 ### ``/var/lib/zabbix/ssl/keys``
 
@@ -276,7 +277,7 @@ SNMP traps processing feature could be enabled using shared volume and switched 
 
 ### ``/var/lib/zabbix/mibs``
 
-The volume allows to add new MIB files. It does not support subdirectories, all MIBs must be placed to ``/var/lib/zabbix/mibs``.
+The volume allows to add new MIB files. It does not support subdirectories, all MIBs must be placed in ``/var/lib/zabbix/mibs``.
 
 ### ``/var/lib/zabbix/export``
 
@@ -314,7 +315,7 @@ Please see [the Docker installation documentation](https://docs.docker.com/insta
 
 ## Documentation
 
-Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/7.2/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/7.2/README.md) before attempting a pull request.
+Documentation for this image is stored in the [`server-pgsql/` directory](https://github.com/zabbix/zabbix-docker/tree/7.4/Dockerfiles/server-pgsql) of the [`zabbix/zabbix-docker` GitHub repo](https://github.com/zabbix/zabbix-docker/). Be sure to familiarize yourself with the [repository's `README.md` file](https://github.com/zabbix/zabbix-docker/blob/7.4/README.md) before attempting a pull request.
 
 ## Issues
 

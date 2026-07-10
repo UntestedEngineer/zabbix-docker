@@ -503,8 +503,6 @@ spec:
             value: ""
           - name: ZBX_STARTALERTERS
             value: ""
-          - name: ZBX_JAVAGATEWAY_ENABLE
-            value: "true"
           - name: ZBX_JAVAGATEWAY
             value: "zabbix-java-gateway"
           - name: ZBX_JAVAGATEWAYPORT
@@ -547,7 +545,7 @@ spec:
             value: ""
           - name: ZBX_TIMEOUT
             value: "4"
-          - name: ZBX_TRAPPERIMEOUT
+          - name: ZBX_TRAPPERTIMEOUT
             value: ""
           - name: ZBX_UNREACHABLEPERIOD
             value: ""
@@ -702,8 +700,6 @@ spec:
             value: ""
           - name: ZBX_STARTHTTPPOLLERS
             value: ""
-          - name: ZBX_JAVAGATEWAY_ENABLE
-            value: "true"
           - name: ZBX_JAVAGATEWAY
             value: "zabbix-java-gateway"
           - name: ZBX_JAVAGATEWAYPORT
@@ -732,7 +728,7 @@ spec:
             value: ""
           - name: ZBX_TIMEOUT
             value: "4"
-          - name: ZBX_TRAPPERIMEOUT
+          - name: ZBX_TRAPPERTIMEOUT
             value: ""
           - name: ZBX_UNREACHABLEPERIOD
             value: ""
@@ -896,8 +892,6 @@ spec:
             value: ""
           - name: ZBX_STARTHTTPPOLLERS
             value: ""
-          - name: ZBX_JAVAGATEWAY_ENABLE
-            value: "true"
           - name: ZBX_JAVAGATEWAY
             value: "zabbix-java-gateway"
           - name: ZBX_JAVAGATEWAYPORT
@@ -926,7 +920,7 @@ spec:
             value: ""
           - name: ZBX_TIMEOUT
             value: "4"
-          - name: ZBX_TRAPPERIMEOUT
+          - name: ZBX_TRAPPERTIMEOUT
             value: ""
           - name: ZBX_UNREACHABLEPERIOD
             value: ""
