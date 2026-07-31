@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=alpine:3.24
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.12
+ARG ZBX_VERSION=${MAJOR_VERSION}.13
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -49,14 +49,10 @@ COPY --from=builder /tmp/zabbix-${ZBX_VERSION}-output/server/database/postgresql
 
 RUN set -eux && \
     INSTALL_PKGS="bash \
-            traceroute \
-            nmap \
-            krb5 \
-            fping \
+            gzip \
             tzdata \
-            iputils \
-            openssl \
             c-ares \
+            krb5 \
             libcap \
             libcurl \
             libevent \
@@ -65,12 +61,16 @@ RUN set -eux && \
             libxml2 \
             net-snmp-agent-libs \
             openipmi-libs \
+            openssl \
             pcre2 \
-            postgresql17-client \
-            gzip \
             unixodbc \
             zlib \
             openssh-client \
+            fping \
+            iputils \
+            nmap \
+            traceroute \
+            postgresql18-client \
             jq \
             expect" && \
     apk add \

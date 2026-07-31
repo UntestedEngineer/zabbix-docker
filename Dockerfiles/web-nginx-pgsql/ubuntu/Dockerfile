@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=ubuntu:resolute
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.12
+ARG ZBX_VERSION=${MAJOR_VERSION}.13
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -59,26 +59,24 @@ COPY conf/etc/ /etc/
 RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/,sharing=locked \
     set -eux && \
-    printf '%s\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d && \
-    chmod +x /usr/sbin/policy-rc.d && \
     INSTALL_PKGS="bash \
-            tzdata \
             ca-certificates \
             curl \
-            nginx \
+            jq \
             locales \
+            tzdata \
             libldap-common \
+            nginx \
+            php8.5-fpm \
             php8.5-bcmath \
             php8.5-curl \
-            php8.5-fpm \
             php8.5-gd \
             php8.5-ldap \
             php8.5-mbstring \
-            php8.5-xml \
             php8.5-pgsql \
-            postgresql-client \
-            jq" && \
-    apt-get -y update && \
+            php8.5-xml \
+            postgresql-client" && \
+    apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get -y \
             -o Dpkg::Options::="--force-confdef" \
             -o Dpkg::Options::="--force-confold" \

@@ -11,7 +11,7 @@ runs:
   using: composite
   steps:
     - name: Attest image
-      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+      uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
       with:
         subject-name: ${{ inputs.subject_name }}
         subject-digest: ${{ inputs.subject_digest }}

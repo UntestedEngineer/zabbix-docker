@@ -16,7 +16,8 @@ on:
       - '!Dockerfiles/*/windows/*'
       - '.github/workflows/images_build.yml'
       - '.github/actions/*'
-      - 'templates/entrypoints/**'
+      - 'templates/entrypoints/*.sh'
+      - 'templates/entrypoints/lib/**'
   schedule:
     - cron:  '50 02 * * *'
   workflow_dispatch:
@@ -67,7 +68,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: block
@@ -79,7 +80,7 @@ jobs:
             release-assets.githubusercontent.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -164,7 +165,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: audit
@@ -262,7 +263,7 @@ jobs:
             ziply.mm.fcix.net:443
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -299,6 +300,7 @@ jobs:
         uses: ./.github/actions/docker-linux-setup
         with:
           auto_push_images: true
+          platforms: ${{ steps.platform.outputs.list }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
@@ -352,7 +354,7 @@ jobs:
           printf '%s' "${METADATA}" > "$CACHE_FILE_NAME"
 
       - name: Upload artifact metadata
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: ${{ env.BASE_CACHE_FILE_NAME }}
           name: ${{ env.BASE_BUILD_NAME }}-${{ matrix.os }}-${{ github.run_id }}
@@ -375,7 +377,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: block
@@ -409,9 +411,10 @@ jobs:
             sum.golang.org:443
             timestamp.sigstore.dev:443
             tuf-repo-cdn.sigstore.dev:443
+            production.cloudfront.docker.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -479,8 +482,26 @@ jobs:
         uses: ./.github/actions/docker-linux-setup
         with:
           auto_push_images: true
+          platforms: ${{ steps.platform.outputs.list }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Compute build parallelism
+        id: jobs
+        env:
+          PLATFORMS: ${{ steps.platform.outputs.list }}
+        run: |
+          # QEMU-emulated (non-amd64) compiles are the memory bottleneck: a single emulated
+          # gcc/Go process is huge, and even make -j2 OOMs a 16 GB runner ("runner received a
+          # shutdown signal"). Use -j1 whenever the build includes any emulated arch; allow
+          # full parallelism only for a pure native amd64 build.
+          case "$PLATFORMS" in
+            linux/amd64) jobs="$(nproc)" ;;
+            *)           jobs=1 ;;
+          esac
+
+          echo "Platforms: $PLATFORMS -> BUILD_JOBS=$jobs"
+          echo "jobs=$jobs" >> "$GITHUB_OUTPUT"
 
       - name: Build ${{ matrix.build }}/${{ matrix.os }} and push
         id: docker_build
@@ -497,6 +518,7 @@ jobs:
             config_templates=./templates/config/
           build_args: |
             BUILD_BASE_IMAGE=${{ steps.base_build.outputs.base_build_image }}
+            BUILD_JOBS=${{ steps.jobs.outputs.jobs }}
           labels: |
             org.opencontainers.image.revision=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
             org.opencontainers.image.created=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
@@ -532,7 +554,7 @@ jobs:
           printf '%s' "${METADATA}" > "$CACHE_FILE_NAME"
 
       - name: Upload artifact metadata
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: ${{ env.BUILD_CACHE_FILE_NAME }}
           name: ${{ matrix.build }}-${{ matrix.os }}-${{ github.run_id }}
@@ -556,7 +578,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
           egress-policy: audit
@@ -655,9 +677,10 @@ jobs:
             uvermont.mm.fcix.net:80
             yum.oracle.com:443
             ziply.mm.fcix.net:443
+            production.cloudfront.docker.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -675,11 +698,8 @@ jobs:
         run: |
           if [[ "$MATRIX_BUILD" == "web-service" ]]; then
             case "$MATRIX_OS" in
-              alpine|centos|ubuntu)
+              alpine|centos|ol|ubuntu)
                 platform_list="linux/amd64,linux/arm64"
-                ;;
-              ol)
-                platform_list="linux/amd64"
                 ;;
               *)
                 platform_list="$(jq -r --arg os "$MATRIX_OS" '.["os-linux"][$os] | join(",")' "$MATRIX_FILE")"
@@ -767,6 +787,7 @@ jobs:
         uses: ./.github/actions/docker-linux-setup
         with:
           auto_push_images: ${{ env.AUTO_PUSH_IMAGES }}
+          platforms: ${{ steps.platform.outputs.list }}
           docker_username: ${{ secrets.DOCKER_USERNAME }}
           docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
@@ -802,6 +823,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           build_contexts: |
             config_templates=./templates/config/snmptraps/
+            entrypoints=./templates/entrypoints/
             scripts=./templates/scripts/snmptraps/
           labels: |
             org.opencontainers.image.revision=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}

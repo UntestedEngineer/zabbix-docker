@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=ubuntu:resolute
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.12
+ARG ZBX_VERSION=${MAJOR_VERSION}.13
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -50,23 +50,16 @@ COPY --from=builder /tmp/zabbix-${ZBX_VERSION}-output/server/database/postgresql
 RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/,sharing=locked \
     set -eux && \
-    printf '%s\n' '#!/bin/sh' 'exit 101' > /usr/sbin/policy-rc.d && \
-    chmod +x /usr/sbin/policy-rc.d && \
     INSTALL_PKGS="bash \
-            traceroute \
-            nmap \
-            krb5-user \
-            tzdata \
             ca-certificates \
-            iputils-ping \
-            fping \
-            openssl \
+            gzip \
+            tzdata \
             libc6 \
             libcares2 \
             libcurl4t64 \
             libevent-2.1 \
-            libevent-pthreads-2.1 \
             libevent-extra-2.1 \
+            libevent-pthreads-2.1 \
             libopenipmi0t64 \
             libpcre2-8-0 \
             libpq5 \
@@ -74,19 +67,22 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             libssh-4 \
             libssl3t64 \
             libxml2-16 \
-            postgresql-client \
-            snmp-mibs-downloader \
-            gzip \
+            openssl \
             unixodbc \
             zlib1g \
+            fping \
+            iputils-ping \
+            krb5-user \
+            nmap \
+            snmp-mibs-downloader \
+            traceroute \
+            postgresql-client \
             openssh-client \
             jq \
             expect" && \
-    apt-get -y update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y \
-            -o Dpkg::Options::="--force-confdef" \
-            -o Dpkg::Options::="--force-confold" \
-            --no-install-recommends install \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            --no-install-recommends \
         ${INSTALL_PKGS} && \
     rm -f \
         /var/lib/mibs/ietf/VM-MIB \

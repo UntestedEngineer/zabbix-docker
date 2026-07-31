@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=alpine:3.24
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.12
+ARG ZBX_VERSION=${MAJOR_VERSION}.13
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -55,28 +55,28 @@ COPY conf/etc/ /etc/
 
 RUN set -eux && \
     INSTALL_PKGS="bash \
-            tzdata \
             curl \
             jq \
+            tzdata \
             nginx \
+            php85-fpm \
             php85-bcmath \
             php85-ctype \
             php85-curl \
-            php85-fpm \
+            php85-fileinfo \
             php85-gd \
             php85-gettext \
             php85-json \
             php85-ldap \
             php85-mbstring \
+            php85-openssl \
             php85-pgsql \
             php85-session \
             php85-simplexml \
             php85-sockets \
-            php85-fileinfo \
             php85-xmlreader \
             php85-xmlwriter \
-            php85-openssl \
-            postgresql17-client" && \
+            postgresql18-client" && \
     apk add \
             --no-cache \
             --clean-protected \

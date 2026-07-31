@@ -607,6 +607,7 @@ services:
      protocol: tcp
   restart: "${RESTART_POLICY}"
   attach: false
+  read_only: true
   volumes:
    - ${DATA_DIRECTORY}/usr/sbin/zabbix_java/ext_lib:/usr/sbin/zabbix_java/ext_lib:ro
   deploy:
@@ -653,7 +654,6 @@ services:
    - snmptraps:/var/lib/zabbix/snmptraps:rwz
    - ${DATA_DIRECTORY}/var/lib/zabbix/snmptrapd_config:/var/lib/zabbix/snmptrapd_config:rw
    - ${DATA_DIRECTORY}/var/lib/zabbix/mibs:/var/lib/zabbix/mibs:ro
-  tmpfs: /tmp
   deploy:
    resources:
     limits:
