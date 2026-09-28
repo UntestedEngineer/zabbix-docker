@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=ubuntu:resolute
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.13
+ARG ZBX_VERSION=${MAJOR_VERSION}.14
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -23,6 +23,8 @@ FROM ${OS_BASE_IMAGE}
 ARG MAJOR_VERSION
 ARG ZBX_VERSION
 ARG ZBX_SOURCES=https://git.zabbix.com/scm/zbx/zabbix.git
+ARG ZBX_PRODUCT_REF=${ZBX_VERSION}
+ARG ZBX_PRODUCT_REVISION=unknown
 
 ENV TERM=xterm \
     ZBX_VERSION=${ZBX_VERSION} \
@@ -43,14 +45,16 @@ ENV DAEMON_USER=www-data \
 LABEL org.opencontainers.image.authors="Alexey Pustovalov <alexey.pustovalov@zabbix.com>" \
       org.opencontainers.image.description="Zabbix web-interface based on Nginx web server with PostgreSQL database support" \
       org.opencontainers.image.documentation="https://www.zabbix.com/documentation/${MAJOR_VERSION}/manual/installation/containers" \
-      org.opencontainers.image.licenses="AGPL v3.0" \
-      org.opencontainers.image.source="${ZBX_SOURCES}" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      com.zabbix.product.source="${ZBX_SOURCES}" \
+      com.zabbix.product.ref="${ZBX_PRODUCT_REF}" \
+      com.zabbix.product.revision="${ZBX_PRODUCT_REVISION}" \
+      org.opencontainers.image.source="https://github.com/zabbix/zabbix-docker" \
       org.opencontainers.image.title="Zabbix web-interface (Nginx, PostgreSQL)" \
       org.opencontainers.image.url="https://zabbix.com/" \
       org.opencontainers.image.vendor="Zabbix SIA" \
       org.opencontainers.image.version="${ZBX_VERSION}"
 
-STOPSIGNAL SIGTERM
 
 COPY --from=clean_builder /tmp/zabbix-${ZBX_VERSION}/ui ${ZABBIX_WWW_ROOT}/
 COPY --from=clean_builder /tmp/zabbix-${ZBX_VERSION}-output/web/conf ${ZABBIX_CONF_DIR}/web/
@@ -77,10 +81,10 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
             php8.5-xml \
             postgresql-client" && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
             -o Dpkg::Options::="--force-confdef" \
             -o Dpkg::Options::="--force-confold" \
-            --no-install-recommends install \
+            --no-install-recommends \
         ${INSTALL_PKGS} && \
     groupadd \
             --system \
@@ -107,19 +111,18 @@ RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \
         /etc/nginx/conf.d/*.conf \
         /var/cache/nginx/ \
         /etc/php/8.5/fpm/pool.d/www.conf \
-        /etc/php/8.5/fpm/php-fpm.conf.dpkg-dist && \
+        /etc/php/8.5/fpm/php-fpm.conf.dpkg-dist \
+        /var/lib/locales/supported.d/local && \
     ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log && \
     ln -sf "${ZABBIX_CONF_DIR}/web/zabbix.conf.php" "${ZABBIX_WWW_ROOT}/conf/zabbix.conf.php" && \
     ln -sf "${ZABBIX_CONF_DIR}/web/maintenance.inc.php" "${ZABBIX_WWW_ROOT}/conf/maintenance.inc.php" && \
-    rm -f /var/lib/locales/supported.d/local && \
     awk "/display/ && /true/ {gsub(/^[ \t]+|[ \t]+$/, \"\", \$0); print \$0}" "${ZABBIX_WWW_ROOT}/include/locales.inc.php" | \
         cut -d"'" -f 2 | sort -u | \
         xargs -r -I '{}' bash -c 'echo "{}.UTF-8 UTF-8" >> /var/lib/locales/supported.d/local' && \
     dpkg-reconfigure locales && \
     FIX_PERM_LIST="\
         ${ZABBIX_CONF_DIR}/ \
-        ${ZABBIX_WWW_ROOT}/include/defines.inc.php \
         ${ZABBIX_WWW_ROOT}/modules/ \
         ${ZABBIX_USER_HOME_DIR}/ \
         /etc/nginx/ \

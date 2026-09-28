@@ -1,9 +1,6 @@
 name: Build images (DockerHub)
 
 on:
-  release:
-    types:
-      - published
   push:
     branches:
       - '[0-9]+.[0-9]+'
@@ -60,27 +57,30 @@ jobs:
       contents: read
     outputs:
       os: ${{ steps.os.outputs.list }}
-      database: ${{ steps.database.outputs.list }}
+      builders: ${{ steps.builders.outputs.list }}
       components: ${{ steps.components.outputs.list }}
       is_default_branch: ${{ steps.branch_info.outputs.is_default_branch }}
       current_branch: ${{ steps.branch_info.outputs.current_branch }}
       sha_short: ${{ steps.branch_info.outputs.sha_short }}
+      release_version: ${{ steps.branch_info.outputs.release_version }}
+      need_rebuild: ${{ steps.upstream_changes.outputs.need_rebuild }}
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
         with:
           disable-sudo: true
           egress-policy: block
           disable-telemetry: true
           allowed-endpoints: >
             api.github.com:443
+            git.zabbix.com:443
             github.com:443
             objects.githubusercontent.com:443
             release-assets.githubusercontent.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -110,22 +110,22 @@ jobs:
 
           echo "list=$os_list" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare database list
-        id: database
+      - name: Prepare component builder list
+        id: builders
         env:
           MATRIX_FILE: ${{ env.MATRIX_FILE }}
         run: |
-          database_list="$(jq -c '
+          builder_list="$(jq -c '
             [.components | values[].base]
             | map(select(length > 0))
             | unique
           ' "$MATRIX_FILE")"
 
-          echo "::group::Database List"
-          echo "$database_list"
+          echo "::group::Component Builder List"
+          echo "$builder_list"
           echo "::endgroup::"
 
-          echo "list=$database_list" >> "$GITHUB_OUTPUT"
+          echo "list=$builder_list" >> "$GITHUB_OUTPUT"
 
       - name: Prepare component list
         id: components
@@ -147,10 +147,18 @@ jobs:
           trunk_version: ${{ inputs.trunk_version }}
           trunk_git_branch: ${{ env.TRUNK_GIT_BRANCH }}
 
+      - name: Check upstream changes
+        id: upstream_changes
+        uses: ./.github/actions/check-upstream-changes
+        with:
+          current_branch: ${{ steps.branch_info.outputs.current_branch }}
+          event_name: ${{ github.event_name }}
+
   build_base:
     timeout-minutes: 30
     name: Build base on ${{ matrix.os }}
     needs: init_build
+    if: needs.init_build.outputs.need_rebuild == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -165,7 +173,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
         with:
           disable-sudo: true
           egress-policy: audit
@@ -263,7 +271,7 @@ jobs:
             ziply.mm.fcix.net:443
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -295,6 +303,7 @@ jobs:
           is_default_branch: ${{ needs.init_build.outputs.is_default_branch }}
           trunk_only_event: ${{ env.TRUNK_ONLY_EVENT }}
           event_name: ${{ github.event_name }}
+          release_version: ${{ needs.init_build.outputs.release_version }}
 
       - name: Set up Docker tooling
         uses: ./.github/actions/docker-linux-setup
@@ -320,7 +329,7 @@ jobs:
 
       - name: Scan for vulnerabilities
         if: ${{ matrix.os != 'centos' }}
-        uses: crazy-max/ghaction-container-scan@a0a3900b79d158c85ccf034e5368fae620a9233a # v4.0.0
+        uses: crazy-max/ghaction-container-scan@ffcba8deb5cb3531954cbedbbcd0179d79edf510 # v4.1.0
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           annotations: true
@@ -359,14 +368,14 @@ jobs:
           path: ${{ env.BASE_CACHE_FILE_NAME }}
           name: ${{ env.BASE_BUILD_NAME }}-${{ matrix.os }}-${{ github.run_id }}
 
-  build_base_database:
+  build_components:
     timeout-minutes: 1240
     needs: ["build_base", "init_build"]
-    name: Build ${{ matrix.build }} base on ${{ matrix.os }}
+    name: Build ${{ matrix.build }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        build: ${{ fromJson(needs.init_build.outputs.database) }}
+        build: ${{ fromJson(needs.init_build.outputs.builders) }}
         os: ${{ fromJson(needs.init_build.outputs.os) }}
     runs-on: ubuntu-latest
     permissions:
@@ -376,45 +385,8 @@ jobs:
       artifact-metadata: write
 
     steps:
-      - name: Block egress traffic
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
-        with:
-          disable-sudo: true
-          egress-policy: block
-          disable-telemetry: true
-          allowed-endpoints: >
-            api.github.com:443
-            auth.docker.io:443
-            fulcio.sigstore.dev:443
-            ghcr.io:443
-            git.zabbix.com:443
-            github.com:443
-            go.googlesource.com:443
-            go.mongodb.org:443
-            golang.org:443
-            golang.zabbix.com:443
-            google.golang.org:443
-            gopkg.in:443
-            index.docker.io:443
-            noto-website-2.storage.googleapis.com:443
-            mirror.gcr.io:443
-            oauth2.sigstore.dev:443
-            objects.githubusercontent.com:443
-            pkg-containers.githubusercontent.com:443
-            production.cloudflare.docker.com:443
-            proxy.golang.org:443
-            raw.githubusercontent.com:443
-            registry-1.docker.io:443
-            rekor.sigstore.dev:443
-            release-assets.githubusercontent.com:443
-            storage.googleapis.com:443
-            sum.golang.org:443
-            timestamp.sigstore.dev:443
-            tuf-repo-cdn.sigstore.dev:443
-            production.cloudfront.docker.com:443
-
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -446,6 +418,7 @@ jobs:
           is_default_branch: ${{ needs.init_build.outputs.is_default_branch }}
           trunk_only_event: ${{ env.TRUNK_ONLY_EVENT }}
           event_name: ${{ github.event_name }}
+          release_version: ${{ needs.init_build.outputs.release_version }}
 
       - name: Download artifact metadata of ${{ env.BASE_BUILD_NAME }}:${{ matrix.os }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -532,7 +505,7 @@ jobs:
 
       - name: Attest images
         id: attest
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ format('{0}/{1}/{2}{3}', env.DOCKER_REGISTRY, env.DOCKER_REPOSITORY, env.IMAGES_PREFIX, matrix.build) }}
           subject-digest: ${{ steps.docker_build.outputs.digest }}
@@ -561,7 +534,7 @@ jobs:
 
   build_images:
     timeout-minutes: 90
-    needs: ["build_base_database", "init_build"]
+    needs: ["build_components", "init_build"]
     name: Build ${{ matrix.build }} on ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -578,7 +551,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
         with:
           disable-sudo: true
           egress-policy: audit
@@ -680,7 +653,7 @@ jobs:
             production.cloudfront.docker.com:443
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ env.TRUNK_ONLY_EVENT == 'true' && env.TRUNK_GIT_BRANCH || '' }}
           fetch-depth: 1
@@ -748,6 +721,7 @@ jobs:
           is_default_branch: ${{ needs.init_build.outputs.is_default_branch }}
           trunk_only_event: ${{ env.TRUNK_ONLY_EVENT }}
           event_name: ${{ github.event_name }}
+          release_version: ${{ needs.init_build.outputs.release_version }}
 
       - name: Download artifact metadata of ${{ steps.build_base_image.outputs.build_base }}:${{ matrix.os }}
         if: ${{ matrix.build != 'snmptraps' }}
@@ -829,6 +803,14 @@ jobs:
             org.opencontainers.image.revision=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
             org.opencontainers.image.created=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
 
+      - name: Scan for vulnerabilities
+        if: ${{ env.AUTO_PUSH_IMAGES == 'true' && matrix.os != 'centos' }}
+        uses: crazy-max/ghaction-container-scan@ffcba8deb5cb3531954cbedbbcd0179d79edf510 # v4.1.0
+        with:
+          image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}@${{ matrix.build == 'snmptraps' && steps.docker_build_snmptraps.outputs.digest || steps.docker_build.outputs.digest }}
+          annotations: true
+          dockerfile: ${{ format('{0}/{1}/{2}/Dockerfile', env.DOCKERFILES_DIRECTORY, matrix.build, matrix.os) }}
+
       - name: Sign the images with GitHub OIDC Token
         if: ${{ env.AUTO_PUSH_IMAGES == 'true' }}
         uses: ./.github/actions/cosign-sign
@@ -839,7 +821,7 @@ jobs:
       - name: Attest images
         if: ${{ env.AUTO_PUSH_IMAGES == 'true' }}
         id: attest
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ format('{0}/{1}/{2}{3}', env.DOCKER_REGISTRY, env.DOCKER_REPOSITORY, env.IMAGES_PREFIX, matrix.build) }}
           subject-digest: ${{ matrix.build == 'snmptraps' && steps.docker_build_snmptraps.outputs.digest || steps.docker_build.outputs.digest }}
