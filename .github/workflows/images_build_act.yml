@@ -21,7 +21,7 @@ env:
   IMAGES_PREFIX: "zabbix-"
   DOCKERFILES_DIRECTORY: "./Dockerfiles"
   BUILD_PLATFORMS: linux/amd64,linux/arm64
-  APP_VERSION: "7.4.14"
+  APP_VERSION: "7.4.15"
 
 jobs:
   build_images:
