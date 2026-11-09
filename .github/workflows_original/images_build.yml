@@ -15,9 +15,25 @@ on:
       - '.github/actions/*'
       - 'templates/entrypoints/*.sh'
       - 'templates/entrypoints/lib/**'
+      - 'templates/patches/**'
+      - 'templates/sbom/**'
   schedule:
     - cron:  '50 02 * * *'
   workflow_dispatch:
+    inputs:
+      publish_images:
+        description: 'Publish images'
+        required: true
+        default: false
+        type: boolean
+      release_version:
+        description: 'Full release version (X.Y.Z)'
+        required: false
+        type: string
+      trunk_version:
+        description: 'Specify trunk major version'
+        required: false
+        type: string
 
 concurrency:
   group: images-build-${{ github.workflow }}-${{ github.ref }}
@@ -32,7 +48,7 @@ permissions:
 
 env:
   TRUNK_ONLY_EVENT: ${{ contains(fromJSON('["schedule"]'), github.event_name) }}
-  AUTO_PUSH_IMAGES: ${{ ! contains(fromJSON('["workflow_dispatch"]'), github.event_name) && vars.AUTO_PUSH_IMAGES }}
+  AUTO_PUSH_IMAGES: ${{ (! contains(fromJSON('["workflow_dispatch"]'), github.event_name) && vars.AUTO_PUSH_IMAGES) || (contains(fromJSON('["workflow_dispatch"]'), github.event_name) && inputs.publish_images) }}
 
   DOCKER_REGISTRY: ${{ vars.DOCKER_REGISTRY }}
   DOCKER_REPOSITORY: ${{ vars.DOCKER_REPOSITORY }}
@@ -52,7 +68,7 @@ env:
 jobs:
   init_build:
     name: Initialize build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
     outputs:
@@ -67,7 +83,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           disable-sudo: true
           egress-policy: block
@@ -144,6 +160,7 @@ jobs:
         id: branch_info
         uses: ./.github/actions/get-branch-info
         with:
+          release_version: ${{ inputs.release_version }}
           trunk_version: ${{ inputs.trunk_version }}
           trunk_git_branch: ${{ env.TRUNK_GIT_BRANCH }}
 
@@ -163,7 +180,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJson(needs.init_build.outputs.os) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       id-token: write
@@ -173,7 +190,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           disable-sudo: true
           egress-policy: audit
@@ -363,7 +380,7 @@ jobs:
           printf '%s' "${METADATA}" > "$CACHE_FILE_NAME"
 
       - name: Upload artifact metadata
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ env.BASE_CACHE_FILE_NAME }}
           name: ${{ env.BASE_BUILD_NAME }}-${{ matrix.os }}-${{ github.run_id }}
@@ -377,7 +394,7 @@ jobs:
       matrix:
         build: ${{ fromJson(needs.init_build.outputs.builders) }}
         os: ${{ fromJson(needs.init_build.outputs.os) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       id-token: write
@@ -421,7 +438,7 @@ jobs:
           release_version: ${{ needs.init_build.outputs.release_version }}
 
       - name: Download artifact metadata of ${{ env.BASE_BUILD_NAME }}:${{ matrix.os }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ env.BASE_BUILD_NAME }}-${{ matrix.os }}-${{ github.run_id }}
 
@@ -489,6 +506,8 @@ jobs:
           build_contexts: |
             sources=./sources/
             config_templates=./templates/config/
+            patches=./templates/patches/
+            sbom=./templates/sbom/
           build_args: |
             BUILD_BASE_IMAGE=${{ steps.base_build.outputs.base_build_image }}
             BUILD_JOBS=${{ steps.jobs.outputs.jobs }}
@@ -527,7 +546,7 @@ jobs:
           printf '%s' "${METADATA}" > "$CACHE_FILE_NAME"
 
       - name: Upload artifact metadata
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: ${{ env.BUILD_CACHE_FILE_NAME }}
           name: ${{ matrix.build }}-${{ matrix.os }}-${{ github.run_id }}
@@ -542,7 +561,7 @@ jobs:
         build: ${{ fromJson(needs.init_build.outputs.components) }}
         os: ${{ fromJson(needs.init_build.outputs.os) }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       id-token: write
@@ -551,7 +570,7 @@ jobs:
 
     steps:
       - name: Block egress traffic
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
         with:
           disable-sudo: true
           egress-policy: audit
@@ -725,7 +744,7 @@ jobs:
 
       - name: Download artifact metadata of ${{ steps.build_base_image.outputs.build_base }}:${{ matrix.os }}
         if: ${{ matrix.build != 'snmptraps' }}
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: ${{ steps.build_base_image.outputs.build_base }}-${{ matrix.os }}-${{ github.run_id }}
 
@@ -826,3 +845,10 @@ jobs:
           subject-name: ${{ format('{0}/{1}/{2}{3}', env.DOCKER_REGISTRY, env.DOCKER_REPOSITORY, env.IMAGES_PREFIX, matrix.build) }}
           subject-digest: ${{ matrix.build == 'snmptraps' && steps.docker_build_snmptraps.outputs.digest || steps.docker_build.outputs.digest }}
           push-to-registry: true
+
+      - name: Attest image SBOM
+        if: ${{ env.AUTO_PUSH_IMAGES == 'true' }}
+        uses: ./.github/actions/attest-sbom
+        with:
+          subject_name: ${{ format('{0}/{1}/{2}{3}', env.DOCKER_REGISTRY, env.DOCKER_REPOSITORY, env.IMAGES_PREFIX, matrix.build) }}
+          subject_digest: ${{ matrix.build == 'snmptraps' && steps.docker_build_snmptraps.outputs.digest || steps.docker_build.outputs.digest }}

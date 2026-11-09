@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=alpine:3.24
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.15
+ARG ZBX_VERSION=${MAJOR_VERSION}.16
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:alpine-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -25,6 +25,7 @@ ENV TERM=xterm \
 ENV ZBX_DB_NAME=dummy_db_name \
     ZBX_FPINGLOCATION=/usr/sbin/fping \
     ZBX_LOADMODULEPATH=${ZABBIX_USER_HOME_DIR}/modules \
+    ZBX_EXPORTDIR=${ZABBIX_USER_HOME_DIR}/export/ \
     ZBX_SNMPTRAPPERFILE=${ZABBIX_USER_HOME_DIR}/snmptraps/snmptraps.log \
     ZBX_SSHKEYLOCATION=${ZABBIX_USER_HOME_DIR}/ssh_keys/ \
     ZBX_SSLCERTLOCATION=${ZABBIX_USER_HOME_DIR}/ssl/certs/ \
@@ -40,7 +41,7 @@ LABEL org.opencontainers.image.authors="Alexey Pustovalov <alexey.pustovalov@zab
       com.zabbix.product.revision="${ZBX_PRODUCT_REVISION}" \
       org.opencontainers.image.source="https://github.com/zabbix/zabbix-docker" \
       org.opencontainers.image.title="Zabbix server (PostgreSQL)" \
-      org.opencontainers.image.url="https://zabbix.com/" \
+      org.opencontainers.image.url="https://hub.docker.com/r/zabbix/zabbix-server-pgsql" \
       org.opencontainers.image.vendor="Zabbix SIA" \
       org.opencontainers.image.version="${ZBX_VERSION}"
 

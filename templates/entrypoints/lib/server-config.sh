@@ -9,6 +9,10 @@ readonly ZABBIX_INTERNAL_ENC_DIR="${ZABBIX_USER_HOME_DIR}/enc_internal"
 readonly ZABBIX_SSL_CA_DIR="${ZABBIX_USER_HOME_DIR}/ssl/ssl_ca"
 
 server_config() {
+    if [ -z "${ZBX_EXPORTFILESIZE:-}" ]; then
+        unset ZBX_EXPORTDIR
+    fi
+
     : "${ZBX_ENABLE_SNMP_TRAPS:=false}"
     [[ "${ZBX_ENABLE_SNMP_TRAPS,,}" == "true" ]] && export ZBX_STARTSNMPTRAPPER=1
     unset ZBX_ENABLE_SNMP_TRAPS
@@ -39,12 +43,7 @@ server_config() {
     fi
     unset ZBX_AUTONODEADDRESS
 
-    if [ "$(id -u)" -ne 0 ]; then
-        ZBX_USER="$(id -un)"
-        export ZBX_USER
-    else
-        export ZBX_ALLOWROOT=1
-    fi
+    configure_zabbix_user
 
     openssl_prepare_ca "${ZABBIX_SSL_CA_DIR}" "${ZBX_SSLCALOCATION}"
 }

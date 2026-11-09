@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.6
 ARG OS_BASE_IMAGE=ubuntu:resolute
 ARG MAJOR_VERSION=7.4
-ARG ZBX_VERSION=${MAJOR_VERSION}.15
+ARG ZBX_VERSION=${MAJOR_VERSION}.16
 ARG BUILD_BASE_IMAGE=zabbix/zabbix-build-pgsql:ubuntu-${ZBX_VERSION}
 
 FROM ${BUILD_BASE_IMAGE} AS builder
@@ -51,13 +51,14 @@ LABEL org.opencontainers.image.authors="Alexey Pustovalov <alexey.pustovalov@zab
       com.zabbix.product.revision="${ZBX_PRODUCT_REVISION}" \
       org.opencontainers.image.source="https://github.com/zabbix/zabbix-docker" \
       org.opencontainers.image.title="Zabbix web-interface (Nginx, PostgreSQL)" \
-      org.opencontainers.image.url="https://zabbix.com/" \
+      org.opencontainers.image.url="https://hub.docker.com/r/zabbix/zabbix-web-nginx-pgsql" \
       org.opencontainers.image.vendor="Zabbix SIA" \
       org.opencontainers.image.version="${ZBX_VERSION}"
 
 
 COPY --from=clean_builder /tmp/zabbix-${ZBX_VERSION}/ui ${ZABBIX_WWW_ROOT}/
 COPY --from=clean_builder /tmp/zabbix-${ZBX_VERSION}-output/web/conf ${ZABBIX_CONF_DIR}/web/
+COPY --from=clean_builder /tmp/zabbix-${ZBX_VERSION}-output/web/sbom/ /usr/share/doc/zabbix/sbom/
 COPY conf/etc/ /etc/
 
 RUN --mount=type=cache,target=/var/cache/apt/,sharing=locked \

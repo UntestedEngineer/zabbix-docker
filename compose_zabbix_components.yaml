@@ -701,8 +701,8 @@ services:
   volumes:
    - ${DATA_DIRECTORY}/var/lib/zabbix/enc:/var/lib/zabbix/enc:ro
   tmpfs:
-   - /var/lib/zabbix/.config
    - /tmp
+   - /var/lib/zabbix/enc_internal
   security_opt:
    - seccomp:${ENV_VARS_DIRECTORY}/chrome_dp.json
   deploy:

@@ -23,11 +23,15 @@ run_service() {
     local -a java_opts=(
         -server
         "-Dlogback.configurationFile=${ZBX_GATEWAY_CONFIG}"
+        "$@"
     )
 
     if [[ -n "${ZBX_JAVA_OPTS:-}" ]]; then
-        read -r -a extra_java_opts <<< "${ZBX_JAVA_OPTS}"
-        java_opts+=("${extra_java_opts[@]}")
+        if [[ -n "${JDK_JAVA_OPTIONS:-}" ]]; then
+            export JDK_JAVA_OPTIONS="${JDK_JAVA_OPTIONS} ${ZBX_JAVA_OPTS}"
+        else
+            export JDK_JAVA_OPTIONS="${ZBX_JAVA_OPTS}"
+        fi
     fi
 
     local -a zabbix_opts=(
@@ -53,7 +57,7 @@ run_service() {
 }
 
 if [[ $# -eq 0 || "${1:-}" == -* ]]; then
-    run_service
+    run_service "$@"
 fi
 
 exec "$@"
